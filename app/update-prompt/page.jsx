@@ -1,40 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
 import Form from "@components/Form";
 
 const UpdatePrompt = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <UpdatePromptContent />
+    </Suspense>
+  );
+};
+
+const UpdatePromptContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const promptId = searchParams.get("id");
 
   const [post, setPost] = useState({ prompt: "", tag: "" });
   const [submitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true); // State to manage loading
 
   useEffect(() => {
     const getPromptDetails = async () => {
-      if (!promptId) return;
+      const response = await fetch(`/api/prompt/${promptId}`);
+      const data = await response.json();
 
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/prompt/${promptId}`);
-        const data = await response.json();
-
-        setPost({
-          prompt: data.prompt,
-          tag: data.tag,
-        });
-      } catch (error) {
-        console.error("Failed to load prompt details:", error);
-      } finally {
-        setLoading(false);
-      }
+      setPost({
+        prompt: data.prompt,
+        tag: data.tag,
+      });
     };
 
-    getPromptDetails();
+    if (promptId) getPromptDetails();
   }, [promptId]);
 
   const updatePrompt = async (e) => {
@@ -56,15 +53,11 @@ const UpdatePrompt = () => {
         router.push("/");
       }
     } catch (error) {
-      console.error("Failed to update prompt:", error);
+      console.log(error);
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <Form
